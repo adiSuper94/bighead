@@ -65,8 +65,7 @@ void *da_get(DynamicArray *list, size_t index) {
 int da_remove_at(DynamicArray *list, size_t index) {
   if (index >= list->size)
     return -1;
-  memmove(&list->data[index], &list->data[index + 1],
-          (list->size - index - 1) * sizeof(void *));
+  memmove(&list->data[index], &list->data[index + 1], (list->size - index - 1) * sizeof(void *));
   list->size--;
   return 0;
 }
@@ -227,4 +226,52 @@ void hm_deep_free(HashMap *map) {
   free(map);
 }
 
-int main() { return 0; }
+StringBuilder *sb_new() {
+  const size_t init_size = 64;
+  StringBuilder *sb = malloc(sizeof(StringBuilder));
+  sb->size = 0;
+  sb->buffer = malloc(sizeof(char *) * init_size);
+  sb->capacity = init_size;
+  return sb;
+}
+
+StringBuilder *sb_append(StringBuilder *sb, char *s) {
+  size_t s_len = strlen(s);
+  if (sb->capacity - sb->size <= s_len) {
+    size_t new_buff_len = sb->capacity * 2;
+    while (new_buff_len - sb->size <= s_len) {
+      new_buff_len *= 2;
+    }
+    sb->buffer = realloc(sb->buffer, new_buff_len);
+    sb->capacity = new_buff_len;
+  }
+  char *str_copy = malloc(sizeof(char *) * s_len + 1);
+  strcpy(str_copy, s);
+  memmove(sb->buffer + sb->size, str_copy, s_len);
+  sb->size += s_len;
+  return sb;
+}
+String *sb_to_string(StringBuilder *sb) {
+  String *s = malloc(sizeof(String));
+  s->size = sb->size;
+  s->string = malloc(sizeof(char *) * s->size);
+  strcpy(s->string, sb->buffer);
+  return s;
+}
+
+void sb_free(StringBuilder *sb) {
+  free(sb->buffer);
+  free(sb);
+}
+
+int main() {
+  StringBuilder *sb = sb_new();
+  sb_append(sb, "Bruce");
+  log_msg(INFO, "%s cap: %u size: %u\n", sb->buffer, sb->capacity, sb->size);
+  sb_append(sb, " Wayne");
+  log_msg(INFO, "%s cap: %u size: %u\n", sb->buffer, sb->capacity, sb->size);
+  sb_append(sb, " is Batman");
+  log_msg(INFO, "%s cap: %u size: %u\n", sb->buffer, sb->capacity, sb->size);
+  String *s = sb_to_string(sb);
+  log_msg(INFO, "String: %s size: %u\n", s->string, s->size);
+}

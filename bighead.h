@@ -2,11 +2,20 @@
 
 typedef enum { INFO, WARN, ERROR } LogLevel;
 
+void log_msg(LogLevel level, const char *format, ...);
+
 typedef struct {
-  void **data;
   size_t size;
   size_t capacity;
+  void **data;
 } DynamicArray;
+
+DynamicArray *da_new(size_t initial_capacity);
+int da_push(DynamicArray *list, void *item);
+void *da_get(DynamicArray *list, size_t index);
+int da_remove_at(DynamicArray *list, size_t index);
+void da_free(DynamicArray *list);
+void da_deep_free(DynamicArray *list);
 
 typedef struct {
   char *key;
@@ -14,13 +23,11 @@ typedef struct {
 } HashEntry;
 
 typedef struct {
-  DynamicArray **buckets;
   size_t num_buckets;
   size_t size;
+  DynamicArray **buckets;
   unsigned long (*hash_func)(const char *);
 } HashMap;
-
-void log_msg(LogLevel level, const char *format, ...);
 
 HashMap *hm_new(size_t num_buckets);
 void hm_put(HashMap *map, char *key, void *value);
@@ -30,9 +37,19 @@ void hm_resize(HashMap *map, size_t new_num_buckets);
 void hm_free(HashMap *map);
 void hm_deep_free(HashMap *map);
 
-DynamicArray *da_new(size_t initial_capacity);
-int da_push(DynamicArray *list, void *item);
-void *da_get(DynamicArray *list, size_t index);
-int da_remove_at(DynamicArray *list, size_t index);
-void da_free(DynamicArray *list);
-void da_deep_free(DynamicArray *list);
+typedef struct {
+  size_t size;
+  char *string;
+} String;
+
+typedef struct {
+  size_t size;
+  size_t capacity;
+  char *buffer;
+} StringBuilder;
+
+StringBuilder *sb_new();
+StringBuilder *sb_append(StringBuilder *sb, char *s);
+String *sb_to_string(StringBuilder *sb);
+void sb_free(StringBuilder *sb);
+
