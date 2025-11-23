@@ -75,15 +75,6 @@ void da_free(DynamicArray *list) {
   free(list);
 }
 
-void da_deep_free(DynamicArray *list) {
-  for (size_t i = 0; i < list->size; i++) {
-    if (list->data[i]) {
-      free(list->data[i]);
-    }
-  }
-  da_free(list);
-}
-
 unsigned long hash_string(const char *str) {
   unsigned long hash = 5381;
   int c;
@@ -201,23 +192,6 @@ void hm_free(HashMap *map) {
     for (size_t j = 0; j < bucket->size; j++) {
       HashEntry *entry = (HashEntry *)da_get(bucket, j);
       free(entry->key);
-      free(entry);
-    }
-    da_free(bucket);
-  }
-  free(map->buckets);
-  free(map);
-}
-
-void hm_deep_free(HashMap *map) {
-  for (size_t i = 0; i < map->num_buckets; i++) {
-    DynamicArray *bucket = map->buckets[i];
-    for (size_t j = 0; j < bucket->size; j++) {
-      HashEntry *entry = (HashEntry *)da_get(bucket, j);
-      free(entry->key);
-      if (entry->value) {
-        free(entry->value);
-      }
       free(entry);
     }
     da_free(bucket);

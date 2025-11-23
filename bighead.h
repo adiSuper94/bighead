@@ -15,7 +15,6 @@ int da_push(DynamicArray *list, void *item);
 void *da_get(DynamicArray *list, size_t index);
 int da_remove_at(DynamicArray *list, size_t index);
 void da_free(DynamicArray *list);
-void da_deep_free(DynamicArray *list);
 
 typedef struct {
   char *key;
@@ -35,11 +34,6 @@ void *hm_get(HashMap *map, const char *key);
 int hm_remove(HashMap *map, const char *key);
 void hm_resize(HashMap *map, size_t new_num_buckets);
 void hm_free(HashMap *map);
-// TODO: check if there is a way to figure out if a pointer is heap or stack alocated.
-// If its heap allocated hm_deep_free makes sense. Else delete it.
-// If all memory is arena allocated cleaning it should be easy, and this function wouldn't
-// be needed, as we can simply just free the arena.
-void hm_deep_free(HashMap *map);
 
 typedef struct {
   size_t size;
