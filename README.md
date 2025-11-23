@@ -7,6 +7,8 @@ BigHead is a small and useless C library for everyone but me (maybe even me) tha
 - **Dynamic Arrays**: Grow your arrays dynamically – infinitely scalable!
 - **Hash Maps**: Store key-value pairs efficiently.
 - **Logging**: Log messages with levels INFO, WARN, ERROR – because debugging can be full of surprises.
+- **String Builder**: Efficient string concatenation without manual memory management.
+- **Arena Allocator**: Fast memory pool allocation with bulk cleanup.
 
 ## Installation
 
@@ -40,4 +42,26 @@ hm_free(map);
 ```c
 log_msg(INFO, "This is an info message");
 log_msg(ERROR, "Something went wrong: %s", error_msg);
+```
+
+### String Builder
+
+```c
+StringBuilder *sb = sb_new();
+sb_append(sb, "Hello");
+sb_append(sb, " World");
+String *result = sb_to_string(sb);
+printf("%s\n", result->string); // Hello World
+sb_free(sb);
+```
+
+### Arena Allocator
+
+```c
+Arena *arena = arena_new(1024);
+char *str = arena_alloc(arena, 100);
+strcpy(str, "Allocated string");
+// Use memory...
+arena_clear(arena); // Reset without freeing
+arena_free(arena);  // Complete cleanup
 ```
