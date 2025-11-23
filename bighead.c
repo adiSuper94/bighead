@@ -252,6 +252,11 @@ void *arena_alloc(Arena *arena, size_t size) {
   if (arena->offset % ALIGNMENT != 0) {
     arena->offset = (((arena->offset + ALIGNMENT) / ALIGNMENT) * ALIGNMENT);
   }
+  // Consider just erroring out if we run out of memory
+  if (arena->offset + size > arena->size) {
+    log_msg(ERROR, "Arena out of memory!");
+    return NULL;
+  }
   arena->commited += size;
   arena->offset += size;
   // Casting to char* to do pointer arithmetic without warning
