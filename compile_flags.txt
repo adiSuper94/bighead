@@ -1,1 +1,5 @@
 -xc
+-Wall
+-Wextra
+-std=c99
+-Wpedantic

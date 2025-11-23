@@ -200,7 +200,7 @@ void hm_free(HashMap *map) {
   free(map);
 }
 
-StringBuilder *sb_new() {
+StringBuilder *sb_new(void) {
   const size_t init_size = 64;
   StringBuilder *sb = malloc(sizeof(StringBuilder));
   sb->size = 0;
@@ -254,7 +254,8 @@ void *arena_alloc(Arena *arena, size_t size) {
   }
   arena->commited += size;
   arena->offset += size;
-  return arena->mem + arena->offset - size;
+  // Casting to char* to do pointer arithmetic without warning
+  return ((char *)arena->mem) + arena->offset - size;
 }
 
 void arena_free(Arena *arena) {
@@ -266,32 +267,4 @@ void arena_clear(Arena *arena) {
   arena->size = 0;
   arena->offset = 0;
   arena->commited = 0;
-}
-
-void sb_test() {
-  StringBuilder *sb = sb_new();
-  sb_append(sb, "Bruce");
-  log_msg(INFO, "%s cap: %u size: %u\n", sb->buffer, sb->capacity, sb->size);
-  sb_append(sb, " Wayne");
-  log_msg(INFO, "%s cap: %u size: %u\n", sb->buffer, sb->capacity, sb->size);
-  sb_append(sb, " is Batman");
-  log_msg(INFO, "%s cap: %u size: %u\n", sb->buffer, sb->capacity, sb->size);
-  String *s = sb_to_string(sb);
-  log_msg(INFO, "String: %s size: %u\n", s->string, s->size);
-}
-
-void arena_test() {
-  Arena *a = arena_new(sizeof(char) * 10);
-  char *str1 = arena_alloc(a, sizeof(char) * 5);
-  strcpy(str1, "abcdefghi");
-  log_msg(INFO, str1);
-  char *str2 = arena_alloc(a, sizeof(char) * 5);
-  strcpy(str2, "FGHI");
-  log_msg(INFO, str2);
-  log_msg(INFO, str1);
-}
-
-int main() {
-  sb_test();
-  arena_test();
 }

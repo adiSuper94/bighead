@@ -46,7 +46,7 @@ typedef struct {
   char *buffer;
 } StringBuilder;
 
-StringBuilder *sb_new();
+StringBuilder *sb_new(void);
 StringBuilder *sb_append(StringBuilder *sb, char *s);
 String *sb_to_string(StringBuilder *sb);
 void sb_free(StringBuilder *sb);
