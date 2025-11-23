@@ -35,6 +35,10 @@ void *hm_get(HashMap *map, const char *key);
 int hm_remove(HashMap *map, const char *key);
 void hm_resize(HashMap *map, size_t new_num_buckets);
 void hm_free(HashMap *map);
+// TODO: check if there is a way to figure out if a pointer is heap or stack alocated.
+// If its heap allocated hm_deep_free makes sense. Else delete it.
+// If all memory is arena allocated cleaning it should be easy, and this function wouldn't
+// be needed, as we can simply just free the arena.
 void hm_deep_free(HashMap *map);
 
 typedef struct {
@@ -53,3 +57,14 @@ StringBuilder *sb_append(StringBuilder *sb, char *s);
 String *sb_to_string(StringBuilder *sb);
 void sb_free(StringBuilder *sb);
 
+typedef struct Arena {
+  size_t size;
+  size_t offset;
+  size_t commited;
+  void *mem;
+} Arena;
+
+Arena *arena_new(size_t size);
+void *arena_alloc(Arena *arena, size_t size);
+void arena_free(Arena *arena);
+void arena_clear(Arena *arena);

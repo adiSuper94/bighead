@@ -53,7 +53,7 @@ int da_push(DynamicArray *list, void *item) {
     list->capacity = new_capacity;
   }
   list->data[list->size++] = item;
-  return 0;
+  return list->size;
 }
 
 void *da_get(DynamicArray *list, size_t index) {
@@ -264,7 +264,37 @@ void sb_free(StringBuilder *sb) {
   free(sb);
 }
 
-int main() {
+#define ALIGNMENT (sizeof(void *))
+
+Arena *arena_new(size_t size) {
+  Arena *a = malloc(sizeof(Arena));
+  a->size = size;
+  a->commited = 0;
+  a->mem = malloc(size);
+  a->offset = 0;
+  return a;
+}
+void *arena_alloc(Arena *arena, size_t size) {
+  if (arena->offset % ALIGNMENT != 0) {
+    arena->offset = (((arena->offset + ALIGNMENT) / ALIGNMENT) * ALIGNMENT);
+  }
+  arena->commited += size;
+  arena->offset += size;
+  return arena->mem + arena->offset - size;
+}
+
+void arena_free(Arena *arena) {
+  free(arena->mem);
+  free(arena);
+}
+
+void arena_clear(Arena *arena) {
+  arena->size = 0;
+  arena->offset = 0;
+  arena->commited = 0;
+}
+
+void sb_test() {
   StringBuilder *sb = sb_new();
   sb_append(sb, "Bruce");
   log_msg(INFO, "%s cap: %u size: %u\n", sb->buffer, sb->capacity, sb->size);
@@ -274,4 +304,20 @@ int main() {
   log_msg(INFO, "%s cap: %u size: %u\n", sb->buffer, sb->capacity, sb->size);
   String *s = sb_to_string(sb);
   log_msg(INFO, "String: %s size: %u\n", s->string, s->size);
+}
+
+void arena_test() {
+  Arena *a = arena_new(sizeof(char) * 10);
+  char *str1 = arena_alloc(a, sizeof(char) * 5);
+  strcpy(str1, "abcdefghi");
+  log_msg(INFO, str1);
+  char *str2 = arena_alloc(a, sizeof(char) * 5);
+  strcpy(str2, "FGHI");
+  log_msg(INFO, str2);
+  log_msg(INFO, str1);
+}
+
+int main() {
+  sb_test();
+  arena_test();
 }
