@@ -54,11 +54,12 @@ void sb_free(StringBuilder *sb);
 typedef struct Arena {
   size_t size;
   size_t offset;
-  size_t commited;
+  bool fixed;
   void *mem;
+  struct Arena *next;
 } Arena;
 
-Arena *arena_new(size_t size);
+Arena *arena_new(size_t size, bool fixed);
 void *arena_alloc(Arena *arena, size_t size);
 void arena_free(Arena *arena);
 void arena_clear(Arena *arena);

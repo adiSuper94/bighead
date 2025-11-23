@@ -14,7 +14,7 @@ void sb_test(void) {
 }
 
 void arena_test(void) {
-  Arena *a = arena_new(sizeof(char) * 10);
+  Arena *a = arena_new(sizeof(char) * 10, false);
   char *str1 = arena_alloc(a, sizeof(char) * 5);
   strcpy(str1, "abcdefghi");
   log_msg(INFO, str1);

@@ -240,36 +240,71 @@ void sb_free(StringBuilder *sb) {
 
 #define ALIGNMENT (sizeof(void *))
 
-Arena *arena_new(size_t size) {
+size_t aligned_size(size_t size) {
+  if (size % ALIGNMENT == 0) {
+    return size;
+  }
+  return (((size + ALIGNMENT) / ALIGNMENT) * ALIGNMENT);
+}
+
+Arena *arena_new(size_t size, bool fixed) {
   Arena *a = malloc(sizeof(Arena));
+  size = aligned_size(size);
   a->size = size;
-  a->commited = 0;
   a->mem = malloc(size);
   a->offset = 0;
+  a->fixed = fixed;
+  a->next = NULL;
   return a;
 }
-void *arena_alloc(Arena *arena, size_t size) {
-  if (arena->offset % ALIGNMENT != 0) {
-    arena->offset = (((arena->offset + ALIGNMENT) / ALIGNMENT) * ALIGNMENT);
-  }
-  // Consider just erroring out if we run out of memory
+
+void *unaligned_arena_alloc(Arena *arena, size_t size) {
   if (arena->offset + size > arena->size) {
-    log_msg(ERROR, "Arena out of memory!");
-    return NULL;
+    if (arena->fixed == true) {
+      log_msg(ERROR, "Arena out of memory!");
+      return NULL;
+    }
+    if (arena->next == NULL) {
+      arena->next = arena_new(arena->size > size ? arena->size * 2 : size * 2, false);
+    }
+    return unaligned_arena_alloc(arena->next, size);
   }
-  arena->commited += size;
   arena->offset += size;
   // Casting to char* to do pointer arithmetic without warning
   return ((char *)arena->mem) + arena->offset - size;
 }
 
+void *arena_alloc(Arena *arena, size_t size) {
+  size = aligned_size(size);
+  return unaligned_arena_alloc(arena, size);
+}
+
 void arena_free(Arena *arena) {
-  free(arena->mem);
-  free(arena);
+  int arena_count = 1;
+  Arena *current = arena;
+  while (current->next != NULL) {
+    arena_count++;
+    current = current->next;
+  }
+  current = arena;
+  Arena **arenas = malloc(sizeof(Arena *) * arena_count);
+  for (int i = 0; i < arena_count; i++) {
+    arenas[i] = current;
+    current = current->next;
+  }
+  current = arena;
+  for (int i = 0; i < arena_count; i++) {
+    current = arenas[arena_count - i - 1];
+    free(current->mem);
+    free(current);
+  }
+  free(arenas);
 }
 
 void arena_clear(Arena *arena) {
-  arena->size = 0;
-  arena->offset = 0;
-  arena->commited = 0;
+  Arena *current = arena;
+  do {
+    current->offset = 0;
+    current = current->next;
+  } while (current != NULL);
 }
