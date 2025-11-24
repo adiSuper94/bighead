@@ -24,7 +24,7 @@ No dependencies, no npm install, no VC funding required.
 DynamicArray *arr = da_new(10);
 da_push(arr, "Hello");
 da_push(arr, "World");
-printf("%s\n", (char*)da_get(arr, 0)); // Hello
+log_msg(INFO, "%s\n", (char*)da_get(arr, 0)); // Hello
 da_free(arr);
 ```
 
@@ -33,7 +33,7 @@ da_free(arr);
 ```c
 HashMap *map = hm_new(16);
 hm_put(map, "key", "value");
-printf("%s\n", (char*)hm_get(map, "key")); // value
+log_msg(INFO, "%s\n", (char*)hm_get(map, "key")); // value
 hm_free(map);
 ```
 
@@ -51,14 +51,14 @@ StringBuilder *sb = sb_new();
 sb_append(sb, "Hello");
 sb_append(sb, " World");
 String *result = sb_to_string(sb);
-printf("%s\n", result->string); // Hello World
+log_msg(INFO, "%s\n", result->string); // Hello World
 sb_free(sb);
 ```
 
 ### Arena Allocator
 
 ```c
-Arena *arena = arena_new(1024);
+Arena *arena = arena_new(1024, false);
 char *str = arena_alloc(arena, 100);
 strcpy(str, "Allocated string");
 // Use memory...

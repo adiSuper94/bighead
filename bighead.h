@@ -1,8 +1,37 @@
+#include <stdbool.h>
 #include <stddef.h>
 
-typedef enum { INFO, WARN, ERROR } LogLevel;
+typedef enum { INFO, WARN, DEBUG, ERROR } LogLevel;
 
 void log_msg(LogLevel level, const char *format, ...);
+
+#define MALLOC_OR_RETURN(ptr, size, error_msg, return_val)                                         \
+  do {                                                                                             \
+    ptr = malloc(size);                                                                            \
+    if (!ptr) {                                                                                    \
+      log_msg(ERROR, error_msg);                                                                   \
+      return return_val;                                                                           \
+    }                                                                                              \
+  } while (0)
+
+#define MALLOC_OR_CLEANUP(ptr, size, error_msg, cleanup_code)                                      \
+  do {                                                                                             \
+    ptr = malloc(size);                                                                            \
+    if (!ptr) {                                                                                    \
+      log_msg(ERROR, error_msg);                                                                   \
+      cleanup_code return NULL;                                                                    \
+    }                                                                                              \
+  } while (0)
+
+#define REALLOC_OR_RETURN(ptr, size, error_msg, return_val)                                        \
+  do {                                                                                             \
+    void *temp = realloc(ptr, size);                                                               \
+    if (!temp) {                                                                                   \
+      log_msg(ERROR, error_msg);                                                                   \
+      return return_val;                                                                           \
+    }                                                                                              \
+    ptr = temp;                                                                                    \
+  } while (0)
 
 typedef struct {
   size_t size;
@@ -29,7 +58,7 @@ typedef struct {
 } HashMap;
 
 HashMap *hm_new(size_t num_buckets);
-void hm_put(HashMap *map, char *key, void *value);
+bool hm_put(HashMap *map, char *key, void *value);
 void *hm_get(HashMap *map, const char *key);
 int hm_remove(HashMap *map, const char *key);
 void hm_resize(HashMap *map, size_t new_num_buckets);

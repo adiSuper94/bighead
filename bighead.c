@@ -17,6 +17,9 @@ void log_msg(LogLevel level, const char *format, ...) {
   case ERROR:
     level_str = "ERROR";
     break;
+  case DEBUG:
+    level_str = "DEBUG";
+    break;
   default:
     level_str = "UNKNOWN";
     break;
@@ -30,14 +33,11 @@ void log_msg(LogLevel level, const char *format, ...) {
 }
 
 DynamicArray *da_new(size_t initial_capacity) {
-  DynamicArray *list = malloc(sizeof(DynamicArray));
-  if (!list)
-    return NULL;
-  list->data = malloc(initial_capacity * sizeof(void *));
-  if (!list->data) {
-    free(list);
-    return NULL;
-  }
+  DynamicArray *list;
+  MALLOC_OR_RETURN(list, sizeof(DynamicArray), "Failed to allocate memory for DynamicArray", NULL);
+
+  MALLOC_OR_CLEANUP(list->data, initial_capacity * sizeof(void *),
+                    "Failed to allocate memory for DynamicArray data", { free(list); });
   list->size = 0;
   list->capacity = initial_capacity;
   return list;
@@ -46,10 +46,8 @@ DynamicArray *da_new(size_t initial_capacity) {
 int da_push(DynamicArray *list, void *item) {
   if (list->size >= list->capacity) {
     size_t new_capacity = list->capacity * 2;
-    void **new_data = realloc(list->data, new_capacity * sizeof(void *));
-    if (!new_data)
-      return -1;
-    list->data = new_data;
+    REALLOC_OR_RETURN(list->data, new_capacity * sizeof(void *),
+                      "Failed to realloc DynamicArray data", -1);
     list->capacity = new_capacity;
   }
   list->data[list->size++] = item;
@@ -85,14 +83,12 @@ unsigned long hash_string(const char *str) {
 }
 
 HashMap *hm_new(size_t num_buckets) {
-  HashMap *map = malloc(sizeof(HashMap));
-  if (!map)
-    return NULL;
-  map->buckets = malloc(num_buckets * sizeof(DynamicArray *));
-  if (!map->buckets) {
-    free(map);
-    return NULL;
-  }
+  HashMap *map;
+  MALLOC_OR_RETURN(map, sizeof(HashMap), "Failed to allocate memory for HashMap", NULL);
+
+  MALLOC_OR_CLEANUP(map->buckets, num_buckets * sizeof(DynamicArray *),
+                    "Failed to allocate memory for HashMap buckets", { free(map); });
+
   for (size_t i = 0; i < num_buckets; i++) {
     map->buckets[i] = da_new(4);
     if (!map->buckets[i]) {
@@ -110,24 +106,31 @@ HashMap *hm_new(size_t num_buckets) {
   return map;
 }
 
-void hm_put(HashMap *map, char *key, void *value) {
+bool hm_put(HashMap *map, char *key, void *value) {
   unsigned long hash = map->hash_func(key) % map->num_buckets;
   DynamicArray *bucket = map->buckets[hash];
   for (size_t i = 0; i < bucket->size; i++) {
     HashEntry *entry = (HashEntry *)da_get(bucket, i);
     if (strcmp(entry->key, key) == 0) {
       entry->value = value;
-      return;
+      return false;
     }
   }
-  HashEntry *new_entry = malloc(sizeof(HashEntry));
+  HashEntry *new_entry;
+  MALLOC_OR_RETURN(new_entry, sizeof(HashEntry), "Failed to allocate memory for HashEntry", false);
   new_entry->key = strdup(key);
   new_entry->value = value;
-  da_push(bucket, new_entry);
+  int result = da_push(bucket, new_entry);
+  if (result == -1) {
+    free(new_entry->key);
+    free(new_entry);
+    return false;
+  }
   map->size++;
   if (map->size > map->num_buckets) {
     hm_resize(map, map->num_buckets * 2);
   }
+  return true;
 }
 
 void *hm_get(HashMap *map, const char *key) {
@@ -159,9 +162,10 @@ int hm_remove(HashMap *map, const char *key) {
 }
 
 void hm_resize(HashMap *map, size_t new_num_buckets) {
-  DynamicArray **new_buckets = malloc(new_num_buckets * sizeof(DynamicArray *));
-  if (!new_buckets)
-    return;
+  DynamicArray **new_buckets;
+  MALLOC_OR_RETURN(new_buckets, new_num_buckets * sizeof(DynamicArray *),
+                   "Failed to allocate memory for new buckets",
+                   ;);
   for (size_t i = 0; i < new_num_buckets; i++) {
     new_buckets[i] = da_new(4);
     if (!new_buckets[i]) {
@@ -177,6 +181,7 @@ void hm_resize(HashMap *map, size_t new_num_buckets) {
     for (size_t j = 0; j < bucket->size; j++) {
       HashEntry *entry = (HashEntry *)da_get(bucket, j);
       unsigned long new_hash = map->hash_func(entry->key) % new_num_buckets;
+      // TODO: handle da_push failure
       da_push(new_buckets[new_hash], entry);
     }
     da_free(bucket);
@@ -202,9 +207,12 @@ void hm_free(HashMap *map) {
 
 StringBuilder *sb_new(void) {
   const size_t init_size = 64;
-  StringBuilder *sb = malloc(sizeof(StringBuilder));
+  StringBuilder *sb;
+  MALLOC_OR_RETURN(sb, sizeof(StringBuilder), "Failed to allocate memory for StringBuilder", NULL);
+
   sb->size = 0;
-  sb->buffer = malloc(sizeof(char *) * init_size);
+  MALLOC_OR_CLEANUP(sb->buffer, sizeof(char) * init_size,
+                    "Failed to allocate memory for StringBuilder buffer", { free(sb); });
   sb->capacity = init_size;
   return sb;
 }
@@ -216,20 +224,22 @@ StringBuilder *sb_append(StringBuilder *sb, char *s) {
     while (new_buff_len - sb->size <= s_len) {
       new_buff_len *= 2;
     }
-    sb->buffer = realloc(sb->buffer, new_buff_len);
+    REALLOC_OR_RETURN(sb->buffer, new_buff_len, "Failed to realloc StringBuilder buffer", NULL);
     sb->capacity = new_buff_len;
   }
-  char *str_copy = malloc(sizeof(char *) * s_len + 1);
-  strcpy(str_copy, s);
-  memmove(sb->buffer + sb->size, str_copy, s_len);
+  memmove(sb->buffer + sb->size, s, s_len);
   sb->size += s_len;
   return sb;
 }
+
 String *sb_to_string(StringBuilder *sb) {
-  String *s = malloc(sizeof(String));
+  String *s;
+  MALLOC_OR_RETURN(s, sizeof(String), "Failed to allocate memory for String", NULL);
   s->size = sb->size;
-  s->string = malloc(sizeof(char *) * s->size);
-  strcpy(s->string, sb->buffer);
+  MALLOC_OR_CLEANUP(s->string, sizeof(char) * (s->size + 1),
+                    "Failed to allocate memory for String string", { free(s); });
+  strncpy(s->string, sb->buffer, s->size);
+  s->string[s->size] = '\0';
   return s;
 }
 
@@ -248,10 +258,13 @@ size_t aligned_size(size_t size) {
 }
 
 Arena *arena_new(size_t size, bool fixed) {
-  Arena *a = malloc(sizeof(Arena));
+  Arena *a;
+  MALLOC_OR_RETURN(a, sizeof(Arena), "Failed to allocate memory for Arena", NULL);
+
   size = aligned_size(size);
   a->size = size;
-  a->mem = malloc(size);
+  MALLOC_OR_CLEANUP(a->mem, size, "Failed to allocate memory for Arena buffer", { free(a); });
+
   a->offset = 0;
   a->fixed = fixed;
   a->next = NULL;
@@ -287,7 +300,9 @@ void arena_free(Arena *arena) {
     current = current->next;
   }
   current = arena;
-  Arena **arenas = malloc(sizeof(Arena *) * arena_count);
+  Arena **arenas;
+  MALLOC_OR_RETURN(
+      arenas, sizeof(Arena *) * arena_count, "Failed to allocate memory for arenas array", ;);
   for (int i = 0; i < arena_count; i++) {
     arenas[i] = current;
     current = current->next;
