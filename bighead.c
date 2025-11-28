@@ -6,6 +6,8 @@
 #include <string.h>
 
 static char *str_dup(const char *s) {
+  if (!s)
+    return NULL;
   size_t len = strlen(s) + 1;
   char *dup = malloc(len);
   if (dup) {
