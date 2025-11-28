@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include "bighead.h"
 
 #include <stdarg.h>
@@ -69,6 +71,8 @@ int da_remove_at(DynamicArray *list, size_t index) {
 }
 
 void da_free(DynamicArray *list) {
+  if (!list)
+    return;
   free(list->data);
   free(list);
 }
@@ -119,6 +123,11 @@ bool hm_put(HashMap *map, const char *key, void *value) {
   HashEntry *new_entry;
   MALLOC_OR_RETURN(new_entry, sizeof(HashEntry), "Failed to allocate memory for HashEntry", false);
   new_entry->key = strdup(key);
+  if (!new_entry->key) {
+    log_msg(ERROR, "Failed to allocate memory for HashEntry key");
+    free(new_entry);
+    return false;
+  }
   new_entry->value = value;
   int result = da_push(bucket, new_entry);
   if (result == -1) {
@@ -195,6 +204,8 @@ void hm_resize(HashMap *map, size_t new_num_buckets) {
 }
 
 void hm_free(HashMap *map) {
+  if (!map)
+    return;
   for (size_t i = 0; i < map->num_buckets; i++) {
     DynamicArray *bucket = map->buckets[i];
     for (size_t j = 0; j < bucket->size; j++) {
@@ -247,6 +258,8 @@ String *sb_to_string(StringBuilder *sb) {
 }
 
 void sb_free(StringBuilder *sb) {
+  if (!sb)
+    return;
   free(sb->buffer);
   free(sb);
 }
@@ -296,6 +309,8 @@ void *arena_alloc(Arena *arena, size_t size) {
 }
 
 void arena_free(Arena *arena) {
+  if (!arena)
+    return;
   int arena_count = 1;
   Arena *current = arena;
   while (current->next != NULL) {
@@ -320,6 +335,8 @@ void arena_free(Arena *arena) {
 }
 
 void arena_clear(Arena *arena) {
+  if (!arena)
+    return;
   Arena *current = arena;
   do {
     current->offset = 0;
