@@ -4,13 +4,13 @@
 void sb_test(void) {
   StringBuilder *sb = sb_new();
   sb_append(sb, "Bruce");
-  log_msg(INFO, "%s cap: %u size: %u\n", sb->buffer, sb->capacity, sb->size);
+  log_msg(INFO, "%s cap: %zu size: %zu\n", sb->buffer, sb->capacity, sb->size);
   sb_append(sb, " Wayne");
-  log_msg(INFO, "%s cap: %u size: %u\n", sb->buffer, sb->capacity, sb->size);
+  log_msg(INFO, "%s cap: %zu size: %zu\n", sb->buffer, sb->capacity, sb->size);
   sb_append(sb, " is Batman");
-  log_msg(INFO, "%s cap: %u size: %u\n", sb->buffer, sb->capacity, sb->size);
+  log_msg(INFO, "%s cap: %zu size: %zu\n", sb->buffer, sb->capacity, sb->size);
   String *s = sb_to_string(sb);
-  log_msg(INFO, "String: %s size: %u\n", s->string, s->size);
+  log_msg(INFO, "String: %s size: %zu\n", s->string, s->size);
 }
 
 void arena_test(void) {
