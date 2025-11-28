@@ -1,20 +1,11 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include "bighead.h"
 
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-static char *str_dup(const char *s) {
-  if (!s)
-    return NULL;
-  size_t len = strlen(s) + 1;
-  char *dup = malloc(len);
-  if (dup) {
-    memcpy(dup, s, len);
-  }
-  return dup;
-}
 
 void log_msg(LogLevel level, const char *format, ...) {
   const char *level_str;
@@ -135,7 +126,7 @@ bool hm_put(HashMap *map, const char *key, void *value) {
   }
   HashEntry *new_entry;
   MALLOC_OR_RETURN(new_entry, sizeof(HashEntry), "Failed to allocate memory for HashEntry", false);
-  new_entry->key = str_dup(key);
+  new_entry->key = strdup(key);
   if (!new_entry->key) {
     log_msg(ERROR, "Failed to allocate memory for HashEntry key");
     free(new_entry);
