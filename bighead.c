@@ -75,7 +75,7 @@ void da_free(DynamicArray *list) {
 
 unsigned long hash_string(const char *str) {
   unsigned long hash = 5381;
-  int c;
+  unsigned char c;
   while ((c = *str++)) {
     hash = ((hash << 5) + hash) + c;
   }
@@ -106,7 +106,7 @@ HashMap *hm_new(size_t num_buckets) {
   return map;
 }
 
-bool hm_put(HashMap *map, char *key, void *value) {
+bool hm_put(HashMap *map, const char *key, void *value) {
   unsigned long hash = map->hash_func(key) % map->num_buckets;
   DynamicArray *bucket = map->buckets[hash];
   for (size_t i = 0; i < bucket->size; i++) {
@@ -181,8 +181,11 @@ void hm_resize(HashMap *map, size_t new_num_buckets) {
     for (size_t j = 0; j < bucket->size; j++) {
       HashEntry *entry = (HashEntry *)da_get(bucket, j);
       unsigned long new_hash = map->hash_func(entry->key) % new_num_buckets;
-      // TODO: handle da_push failure
-      da_push(new_buckets[new_hash], entry);
+      int result = da_push(new_buckets[new_hash], entry);
+      if (result == -1) {
+        log_msg(ERROR, "Failed to rehash entry during resize, this should really not happen.");
+        exit(1);
+      }
     }
     da_free(bucket);
   }

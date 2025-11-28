@@ -7,7 +7,7 @@ bighead.o: bighead.c bighead.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 testies: testies.c bighead.o
-	$(CC) $(CFLAGS) -L./ -lbighead.o $< -o $@
+	$(CC) $(CFLAGS) bighead.o $< -o $@
 
 .PHONY: clean
 clean:

@@ -58,7 +58,7 @@ typedef struct {
 } HashMap;
 
 HashMap *hm_new(size_t num_buckets);
-bool hm_put(HashMap *map, char *key, void *value);
+bool hm_put(HashMap *map, const char *key, void *value);
 void *hm_get(HashMap *map, const char *key);
 int hm_remove(HashMap *map, const char *key);
 void hm_resize(HashMap *map, size_t new_num_buckets);
