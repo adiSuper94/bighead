@@ -44,6 +44,8 @@ DynamicArray *da_new(size_t initial_capacity) {
 }
 
 int da_push(DynamicArray *list, void *item) {
+  if (!list)
+    return -1;
   if (list->size >= list->capacity) {
     size_t new_capacity = list->capacity * 2;
     REALLOC_OR_RETURN(list->data, new_capacity * sizeof(void *),
@@ -55,13 +57,13 @@ int da_push(DynamicArray *list, void *item) {
 }
 
 void *da_get(DynamicArray *list, size_t index) {
-  if (index >= list->size)
+  if (!list || index >= list->size)
     return NULL;
   return list->data[index];
 }
 
 int da_remove_at(DynamicArray *list, size_t index) {
-  if (index >= list->size)
+  if (!list || index >= list->size)
     return -1;
   memmove(&list->data[index], &list->data[index + 1], (list->size - index - 1) * sizeof(void *));
   list->size--;
@@ -69,6 +71,8 @@ int da_remove_at(DynamicArray *list, size_t index) {
 }
 
 void da_free(DynamicArray *list) {
+  if (!list)
+    return;
   free(list->data);
   free(list);
 }
@@ -107,6 +111,8 @@ HashMap *hm_new(size_t num_buckets) {
 }
 
 bool hm_put(HashMap *map, const char *key, void *value) {
+  if (!map || !key)
+    return false;
   unsigned long hash = map->hash_func(key) % map->num_buckets;
   DynamicArray *bucket = map->buckets[hash];
   for (size_t i = 0; i < bucket->size; i++) {
@@ -119,6 +125,11 @@ bool hm_put(HashMap *map, const char *key, void *value) {
   HashEntry *new_entry;
   MALLOC_OR_RETURN(new_entry, sizeof(HashEntry), "Failed to allocate memory for HashEntry", false);
   new_entry->key = strdup(key);
+  if (!new_entry->key) {
+    log_msg(ERROR, "Failed to allocate memory for HashEntry key");
+    free(new_entry);
+    return false;
+  }
   new_entry->value = value;
   int result = da_push(bucket, new_entry);
   if (result == -1) {
@@ -134,6 +145,8 @@ bool hm_put(HashMap *map, const char *key, void *value) {
 }
 
 void *hm_get(HashMap *map, const char *key) {
+  if (!map || !key)
+    return NULL;
   unsigned long hash = map->hash_func(key) % map->num_buckets;
   DynamicArray *bucket = map->buckets[hash];
   for (size_t i = 0; i < bucket->size; i++) {
@@ -146,6 +159,8 @@ void *hm_get(HashMap *map, const char *key) {
 }
 
 int hm_remove(HashMap *map, const char *key) {
+  if (!map || !key)
+    return -1;
   unsigned long hash = map->hash_func(key) % map->num_buckets;
   DynamicArray *bucket = map->buckets[hash];
   for (size_t i = 0; i < bucket->size; i++) {
@@ -195,6 +210,8 @@ void hm_resize(HashMap *map, size_t new_num_buckets) {
 }
 
 void hm_free(HashMap *map) {
+  if (!map)
+    return;
   for (size_t i = 0; i < map->num_buckets; i++) {
     DynamicArray *bucket = map->buckets[i];
     for (size_t j = 0; j < bucket->size; j++) {
@@ -221,6 +238,8 @@ StringBuilder *sb_new(void) {
 }
 
 StringBuilder *sb_append(StringBuilder *sb, char *s) {
+  if (!sb || !s)
+    return NULL;
   size_t s_len = strlen(s);
   if (sb->capacity - sb->size <= s_len) {
     size_t new_buff_len = sb->capacity * 2;
@@ -247,6 +266,8 @@ String *sb_to_string(StringBuilder *sb) {
 }
 
 void sb_free(StringBuilder *sb) {
+  if (!sb)
+    return;
   free(sb->buffer);
   free(sb);
 }
@@ -291,11 +312,15 @@ void *unaligned_arena_alloc(Arena *arena, size_t size) {
 }
 
 void *arena_alloc(Arena *arena, size_t size) {
+  if (!arena)
+    return NULL;
   size = aligned_size(size);
   return unaligned_arena_alloc(arena, size);
 }
 
 void arena_free(Arena *arena) {
+  if (!arena)
+    return;
   int arena_count = 1;
   Arena *current = arena;
   while (current->next != NULL) {
@@ -320,6 +345,8 @@ void arena_free(Arena *arena) {
 }
 
 void arena_clear(Arena *arena) {
+  if (!arena)
+    return;
   Arena *current = arena;
   do {
     current->offset = 0;
